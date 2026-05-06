@@ -1,0 +1,911 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>성남시 도서관 통합 검색</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&family=Noto+Serif+KR:wght@600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f7f5f0;
+    --surface: #ffffff;
+    --surface2: #f0ede6;
+    --border: #e2ddd4;
+    --text: #1a1814;
+    --text2: #6b6560;
+    --text3: #a09a93;
+    --green: #2d7a5f;
+    --green-bg: #eaf4ee;
+    --green-light: #d0eada;
+    --amber: #c47c1a;
+    --amber-bg: #fef5e4;
+    --red: #c0392b;
+    --red-bg: #fdecea;
+    --blue: #2563a8;
+    --blue-bg: #eef4fd;
+    --accent: #3d6b4f;
+    --radius: 12px;
+    --radius-sm: 8px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Noto Sans KR', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    font-size: 15px;
+    line-height: 1.6;
+  }
+
+  /* ── HEADER ── */
+  .header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 0 24px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    height: 60px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .header-icon {
+    width: 36px; height: 36px;
+    background: var(--accent);
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+  }
+  .header-title {
+    font-family: 'Noto Serif KR', serif;
+    font-size: 17px;
+    font-weight: 600;
+    color: var(--text);
+    letter-spacing: -0.3px;
+  }
+  .header-sub {
+    font-size: 12px;
+    color: var(--text3);
+    margin-left: auto;
+  }
+
+  /* ── LAYOUT ── */
+  .main {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 24px 20px 60px;
+  }
+
+  /* ── API KEY STRIP ── */
+  .key-strip {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 18px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  .key-strip label {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text2);
+    white-space: nowrap;
+  }
+  .key-strip input {
+    flex: 1;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 8px 12px;
+    font-size: 13px;
+    font-family: 'Noto Sans KR', sans-serif;
+    color: var(--text);
+    background: var(--bg);
+    outline: none;
+    min-width: 0;
+  }
+  .key-strip input:focus { border-color: var(--accent); }
+  .key-link {
+    font-size: 12px;
+    color: var(--blue);
+    text-decoration: none;
+    white-space: nowrap;
+  }
+  .key-link:hover { text-decoration: underline; }
+
+  /* ── TABS ── */
+  .tabs {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 20px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 6px;
+  }
+  .tab {
+    flex: 1;
+    padding: 10px 12px;
+    border-radius: var(--radius-sm);
+    border: none;
+    background: transparent;
+    font-size: 13px;
+    font-weight: 500;
+    font-family: 'Noto Sans KR', sans-serif;
+    color: var(--text2);
+    cursor: pointer;
+    transition: all 0.18s;
+    text-align: center;
+    line-height: 1.4;
+  }
+  .tab:hover { background: var(--surface2); }
+  .tab.active {
+    background: var(--accent);
+    color: #fff;
+  }
+  .tab .tab-icon { font-size: 15px; display: block; margin-bottom: 2px; }
+
+  /* ── PANEL ── */
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  /* ── CARD ── */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px 20px;
+    margin-bottom: 16px;
+  }
+  .card-label {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text3);
+    margin-bottom: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  /* ── SEARCH INPUT ── */
+  textarea {
+    width: 100%;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 12px 14px;
+    font-size: 14px;
+    font-family: 'Noto Sans KR', sans-serif;
+    color: var(--text);
+    background: var(--bg);
+    resize: vertical;
+    min-height: 120px;
+    line-height: 1.8;
+    outline: none;
+  }
+  textarea:focus { border-color: var(--accent); }
+  textarea::placeholder { color: var(--text3); }
+  .input-hint { font-size: 12px; color: var(--text3); margin-top: 6px; }
+
+  /* ── BUTTONS ── */
+  .btn-primary {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: var(--radius-sm);
+    padding: 11px 24px;
+    font-size: 14px;
+    font-weight: 500;
+    font-family: 'Noto Sans KR', sans-serif;
+    cursor: pointer;
+    transition: opacity 0.15s;
+  }
+  .btn-primary:hover { opacity: 0.88; }
+  .btn-primary:disabled { opacity: 0.35; cursor: not-allowed; }
+
+  .btn-ghost {
+    background: transparent;
+    color: var(--text2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 11px 18px;
+    font-size: 14px;
+    font-family: 'Noto Sans KR', sans-serif;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .btn-ghost:hover { background: var(--surface2); }
+
+  .btn-row { display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; }
+
+  /* ── FILTER PILLS ── */
+  .filter-row {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-bottom: 14px;
+  }
+  .pill {
+    padding: 6px 14px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    font-size: 13px;
+    color: var(--text2);
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: 'Noto Sans KR', sans-serif;
+  }
+  .pill:hover { border-color: var(--accent); color: var(--accent); }
+  .pill.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+  /* ── LOADING ── */
+  .loading {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--text2);
+    font-size: 14px;
+  }
+  .spinner {
+    width: 28px; height: 28px;
+    border: 3px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    margin: 0 auto 14px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── STEP BADGE ── */
+  .step-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text3);
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 3px 10px;
+    margin-bottom: 10px;
+  }
+
+  /* ── SECTION TITLE ── */
+  .section-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 12px;
+  }
+
+  /* ── BOOK CONFIRM CARDS ── */
+  .confirm-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px 14px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    margin-bottom: 8px;
+    transition: border-color 0.15s;
+  }
+  .confirm-icon {
+    width: 30px; height: 30px;
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px;
+    flex-shrink: 0;
+    font-weight: 700;
+  }
+  .icon-ok { background: var(--green-bg); color: var(--green); }
+  .icon-warn { background: var(--amber-bg); color: var(--amber); }
+  .icon-err { background: var(--red-bg); color: var(--red); }
+  .confirm-info { flex: 1; min-width: 0; }
+  .confirm-title { font-size: 14px; font-weight: 500; color: var(--text); }
+  .confirm-meta { font-size: 12px; color: var(--text2); margin-top: 2px; }
+  .isbn-badge {
+    display: inline-block;
+    font-size: 11px;
+    padding: 1px 7px;
+    border-radius: 20px;
+    background: var(--surface2);
+    color: var(--text3);
+    margin-left: 6px;
+    vertical-align: middle;
+  }
+
+  /* ── RESULT TABLE ── */
+  .tbl-wrap {
+    overflow-x: auto;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+  }
+  table.result-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+    min-width: 600px;
+  }
+  table.result-table th {
+    background: var(--surface2);
+    padding: 9px 8px;
+    text-align: center;
+    font-weight: 500;
+    color: var(--text2);
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+    font-size: 12px;
+  }
+  table.result-table th.left { text-align: left; min-width: 120px; padding-left: 14px; }
+  table.result-table td {
+    padding: 9px 8px;
+    text-align: center;
+    border-bottom: 1px solid var(--border);
+    color: var(--text2);
+  }
+  table.result-table td.left { text-align: left; font-weight: 500; color: var(--text); padding-left: 14px; font-size: 13px; }
+  table.result-table tr:last-child td { border-bottom: none; }
+  table.result-table tr:hover td { background: var(--bg); }
+  .dot-y { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: var(--green); }
+  .dot-n { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: var(--border); }
+
+  /* ── RANK LIST ── */
+  .rank-list { display: flex; flex-direction: column; gap: 8px; }
+  .rank-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 12px 16px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    transition: border-color 0.15s;
+  }
+  .rank-row.top { border-color: var(--green); background: var(--green-bg); }
+  .rank-num { font-size: 14px; font-weight: 700; color: var(--text3); width: 22px; flex-shrink: 0; text-align: center; }
+  .rank-num.gold { color: var(--amber); }
+  .rank-name { font-size: 14px; font-weight: 500; color: var(--text); flex: 1; }
+  .rank-bar-bg { width: 100px; height: 6px; background: var(--surface2); border-radius: 3px; overflow: hidden; flex-shrink: 0; }
+  .rank-bar-fill { height: 100%; background: var(--green); border-radius: 3px; transition: width 0.5s ease; }
+  .rank-count { font-size: 13px; color: var(--text2); white-space: nowrap; min-width: 44px; text-align: right; }
+
+  /* ── RECOMMEND BOX ── */
+  .recommend-box {
+    background: var(--green-bg);
+    border: 1px solid var(--green-light);
+    border-radius: var(--radius-sm);
+    padding: 14px 18px;
+    margin-top: 14px;
+    font-size: 14px;
+    color: var(--green);
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .recommend-box .rec-icon { font-size: 20px; flex-shrink: 0; }
+
+  /* ── ERROR BOX ── */
+  .err-box {
+    background: var(--red-bg);
+    border: 1px solid #f5c6c2;
+    border-radius: var(--radius-sm);
+    padding: 12px 16px;
+    font-size: 14px;
+    color: var(--red);
+    margin-top: 12px;
+  }
+
+  /* ── POPULAR BOOKS ── */
+  .age-selector {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+  }
+  .pop-section-label {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text2);
+    margin-bottom: 10px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .book-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
+  .book-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: all 0.15s;
+    user-select: none;
+  }
+  .book-item:hover { border-color: var(--accent); }
+  .book-item.checked { background: var(--green-bg); border-color: var(--green); }
+  .book-rank-num {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text3);
+    width: 20px;
+    flex-shrink: 0;
+    text-align: center;
+  }
+  .book-rank-num.top3 { color: var(--amber); }
+  .book-item-info { flex: 1; min-width: 0; }
+  .book-item-title { font-size: 14px; font-weight: 500; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .book-item-author { font-size: 12px; color: var(--text2); margin-top: 1px; }
+  .check-box {
+    width: 20px; height: 20px;
+    border: 1.5px solid var(--border);
+    border-radius: 5px;
+    flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s;
+  }
+  .book-item.checked .check-box {
+    background: var(--green);
+    border-color: var(--green);
+    color: #fff;
+    font-size: 12px;
+  }
+
+  /* ── GENDER TOGGLE ── */
+  .gender-toggle {
+    display: flex;
+    background: var(--surface2);
+    border-radius: var(--radius-sm);
+    padding: 4px;
+    gap: 4px;
+    width: fit-content;
+    margin-bottom: 16px;
+  }
+  .gender-btn {
+    padding: 7px 20px;
+    border: none;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    font-family: 'Noto Sans KR', sans-serif;
+    cursor: pointer;
+    background: transparent;
+    color: var(--text2);
+    transition: all 0.15s;
+  }
+  .gender-btn.active { background: var(--surface); color: var(--text); box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+
+  /* ── NOTICE ── */
+  .notice {
+    background: var(--blue-bg);
+    border: 1px solid #bdd4f0;
+    border-radius: var(--radius-sm);
+    padding: 10px 14px;
+    font-size: 13px;
+    color: var(--blue);
+    margin-bottom: 14px;
+    line-height: 1.6;
+  }
+
+  /* ── WISHLIST BADGE ── */
+  .wish-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    padding: 3px 10px;
+    border-radius: 20px;
+    background: var(--amber-bg);
+    color: var(--amber);
+    border: 1px solid #f5d9a0;
+    font-weight: 500;
+    margin-left: 8px;
+  }
+
+  /* ── RESULT AREA ── */
+  .result-area { margin-top: 6px; }
+
+  /* ── DIVIDER ── */
+  .divider { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 600px) {
+    .header-sub { display: none; }
+    .tabs { flex-direction: column; }
+    .tab { flex-direction: row; gap: 6px; }
+    .tab .tab-icon { display: inline; margin-bottom: 0; }
+    .rank-bar-bg { width: 60px; }
+  }
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div class="header-icon">📚</div>
+  <div class="header-title">성남시 도서관 통합 검색</div>
+  <div class="header-sub">18개 도서관 · Vercel 배포용</div>
+</header>
+
+<div class="main">
+  <!-- API STATUS -->
+  <div class="key-strip">
+    <label>API 연결</label>
+    <input type="text" value="Vercel 서버에서 API 키를 안전하게 불러옵니다" readonly />
+    <a class="key-link" href="https://www.data4library.kr/" target="_blank">정보나루 →</a>
+  </div>
+
+  <!-- TABS -->
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('search')">
+      <span class="tab-icon">🔍</span>책 직접 검색
+    </button>
+    <button class="tab" onclick="switchTab('kids')">
+      <span class="tab-icon">🧒</span>어린이 인기도서
+    </button>
+    <button class="tab" onclick="switchTab('adult')">
+      <span class="tab-icon">👨‍👩‍</span>어른 인기도서
+    </button>
+  </div>
+
+  <!-- ══ TAB 1: 직접 검색 ══ -->
+  <div class="panel active" id="panel-search">
+    <div class="card">
+      <div class="card-label">찾고 싶은 책 제목 (한 줄에 하나씩, 최대 10권)</div>
+      <textarea id="bookInput" placeholder="예시&#10;아몬드&#10;마법천자문 1권&#10;해리포터와 마법사의 돌&#10;강아지똥"></textarea>
+      <p class="input-hint">책 제목을 한 줄에 하나씩 입력해 주세요</p>
+      <div class="btn-row">
+        <button class="btn-primary" id="searchBtn" onclick="startDirectSearch()">검색하기</button>
+        <button class="btn-ghost" onclick="resetSearch()">초기화</button>
+      </div>
+    </div>
+    <div class="result-area" id="searchResult"></div>
+  </div>
+
+  <!-- ══ TAB 2: 어린이 인기도서 ══ -->
+  <div class="panel" id="panel-kids">
+    <div class="card">
+      <div class="card-label">연령 선택</div>
+      <div class="age-selector">
+        <button class="pill active" onclick="setKidsAge(this, '6,9')">6~9세</button>
+        <button class="pill" onclick="setKidsAge(this, '10,13')">10~13세</button>
+        <button class="pill" onclick="setKidsAge(this, '14,18')">14~18세</button>
+      </div>
+      <div class="notice">체크한 책을 선택하면 성남시 18개 도서관 소장 여부를 바로 확인할 수 있어요!</div>
+      <div id="kidsList"><div class="loading"><div class="spinner"></div>인기도서 불러오는 중...</div></div>
+      <div class="btn-row" id="kidsBtn" style="display:none;">
+        <button class="btn-primary" onclick="searchCheckedBooks('kids')">선택한 책 도서관 검색하기</button>
+        <span id="kidsCount" class="wish-badge">0권 선택</span>
+      </div>
+    </div>
+    <div class="result-area" id="kidsResult"></div>
+  </div>
+
+  <!-- ══ TAB 3: 어른 인기도서 ══ -->
+  <div class="panel" id="panel-adult">
+    <div class="card">
+      <div class="card-label">대상 선택</div>
+      <div class="gender-toggle">
+        <button class="gender-btn active" id="genderF" onclick="setGender('F')">엄마 (여성)</button>
+        <button class="gender-btn" id="genderM" onclick="setGender('M')">아빠 (남성)</button>
+      </div>
+      <div class="notice">체크한 책을 선택하면 성남시 18개 도서관 소장 여부를 바로 확인할 수 있어요!</div>
+      <div id="adultList"><div class="loading"><div class="spinner"></div>인기도서 불러오는 중...</div></div>
+      <div class="btn-row" id="adultBtn" style="display:none;">
+        <button class="btn-primary" onclick="searchCheckedBooks('adult')">선택한 책 도서관 검색하기</button>
+        <span id="adultCount" class="wish-badge">0권 선택</span>
+      </div>
+    </div>
+    <div class="result-area" id="adultResult"></div>
+  </div>
+
+</div><!-- /main -->
+
+<script>
+const LIBRARIES = [
+  {name:"중앙도서관", code:"141151"},
+  {name:"고등도서관", code:"141201"},
+  {name:"구미도서관", code:"141252"},
+  {name:"논골도서관", code:"141253"},
+  {name:"무지개도서관", code:"141254"},
+  {name:"복정도서관", code:"141255"},
+  {name:"분당도서관", code:"141152"},
+  {name:"서현도서관", code:"141202"},
+  {name:"수내도서관", code:"141203"},
+  {name:"수정도서관", code:"141256"},
+  {name:"운중도서관", code:"141204"},
+  {name:"위례도서관", code:"141257"},
+  {name:"중원도서관", code:"141153"},
+  {name:"중원어린이도서관", code:"141258"},
+  {name:"책테마파크도서관", code:"141259"},
+  {name:"판교도서관", code:"141205"},
+  {name:"판교어린이도서관", code:"141260"},
+  {name:"해오름도서관", code:"141206"}
+];
+
+let kidsAge = '6,9';
+let adultGender = 'F';
+let kidsBooks = [];
+let adultBooks = [];
+
+function getKey() {
+  return 'server';
+}
+
+/* ── TAB SWITCH ── */
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach((t,i) => {
+    t.classList.toggle('active', ['search','kids','adult'][i] === name);
+  });
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('panel-' + name).classList.add('active');
+  if (name === 'kids' && kidsBooks.length === 0) loadKidsBooks();
+  if (name === 'adult' && adultBooks.length === 0) loadAdultBooks();
+}
+
+/* ── XML FETCH ── */
+async function xmlFetch(url) {
+  const r = await fetch(url);
+  const txt = await r.text();
+  return new DOMParser().parseFromString(txt, 'text/xml');
+}
+
+/* ── SEARCH ONE BOOK ── */
+async function searchBook(title, authKey) {
+  const url = `/api/search-books?title=${encodeURIComponent(title)}`;
+  const xml = await xmlFetch(url);
+  const docs = xml.querySelectorAll('doc');
+  const results = [];
+  docs.forEach(d => {
+    const t = d.querySelector('title_info')?.textContent || '';
+    const a = d.querySelector('author_info')?.textContent || '';
+    const isbn = d.querySelector('isbn13')?.textContent || '';
+    const pub = d.querySelector('publisher_info')?.textContent || '';
+    if (isbn) results.push({ title: t.trim(), author: a.trim(), isbn, pub: pub.trim() });
+  });
+  return results;
+}
+
+/* ── CHECK LIBRARY ── */
+async function checkLib(isbn13, libCode, authKey) {
+  const url = `/api/book-exist?libCode=${encodeURIComponent(libCode)}&isbn13=${encodeURIComponent(isbn13)}`;
+  const xml = await xmlFetch(url);
+  return (xml.querySelector('hasBook')?.textContent || 'N') === 'Y';
+}
+
+/* ── POPULAR BOOKS BY AGE ── */
+async function fetchPopularByAge(fromAge, toAge, authKey, gender='') {
+  let url = `/api/popular-books?from_age=${encodeURIComponent(fromAge)}&to_age=${encodeURIComponent(toAge)}`;
+  if (gender) url += `&gender=${gender === 'F' ? 0 : 1}`;
+  const xml = await xmlFetch(url);
+  const docs = xml.querySelectorAll('doc');
+  const books = [];
+  docs.forEach(d => {
+    const title = d.querySelector('bookname')?.textContent || '';
+    const author = d.querySelector('authors')?.textContent || '';
+    const isbn = d.querySelector('isbn13')?.textContent || '';
+    const pub = d.querySelector('publisher')?.textContent || '';
+    if (isbn && title) books.push({ title: title.trim(), author: author.trim(), isbn, pub: pub.trim() });
+  });
+  return books;
+}
+
+/* ── RENDER BOOK LIST (checkable) ── */
+function renderBookList(books, containerId, countId, btnId, storeArr) {
+  storeArr.length = 0;
+  books.forEach(b => storeArr.push({ ...b, checked: false }));
+
+  const container = document.getElementById(containerId);
+  const countEl = document.getElementById(countId);
+  const btnEl = document.getElementById(btnId);
+
+  if (books.length === 0) {
+    container.innerHTML = '<div class="err-box">인기도서를 불러오지 못했어요. API 키를 확인해 주세요.</div>';
+    return;
+  }
+
+  btnEl.style.display = 'flex';
+
+  function render() {
+    container.innerHTML = storeArr.map((b, i) => `
+      <div class="book-item ${b.checked ? 'checked' : ''}" onclick="toggleBook(${i}, '${containerId}', '${countId}', '${btnId}')">
+        <div class="book-rank-num ${i < 3 ? 'top3' : ''}">${i + 1}</div>
+        <div class="book-item-info">
+          <div class="book-item-title">${b.title}</div>
+          <div class="book-item-author">${b.author}${b.pub ? ' · ' + b.pub : ''}</div>
+        </div>
+        <div class="check-box">${b.checked ? '✓' : ''}</div>
+      </div>
+    `).join('');
+    const cnt = storeArr.filter(b => b.checked).length;
+    countEl.textContent = cnt + '권 선택';
+  }
+
+  window['_store_' + containerId] = storeArr;
+  window['_render_' + containerId] = render;
+  render();
+}
+
+function toggleBook(i, containerId, countId, btnId) {
+  const store = window['_store_' + containerId];
+  store[i].checked = !store[i].checked;
+  window['_render_' + containerId]();
+}
+
+/* ── KIDS ── */
+async function loadKidsBooks() {
+  const key = getKey(); if (!key) return;
+  document.getElementById('kidsList').innerHTML = '<div class="loading"><div class="spinner"></div>인기도서 불러오는 중...</div>';
+  document.getElementById('kidsBtn').style.display = 'none';
+  try {
+    const [from, to] = kidsAge.split(',');
+    const books = await fetchPopularByAge(from, to, key);
+    renderBookList(books, 'kidsList', 'kidsCount', 'kidsBtn', kidsBooks);
+  } catch(e) {
+    document.getElementById('kidsList').innerHTML = '<div class="err-box">불러오기 실패. API 키를 확인해 주세요.</div>';
+  }
+}
+
+function setKidsAge(el, age) {
+  kidsAge = age;
+  document.querySelectorAll('.age-selector .pill').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+  kidsBooks = [];
+  document.getElementById('kidsResult').innerHTML = '';
+  loadKidsBooks();
+}
+
+/* ── ADULT ── */
+async function loadAdultBooks() {
+  const key = getKey(); if (!key) return;
+  document.getElementById('adultList').innerHTML = '<div class="loading"><div class="spinner"></div>인기도서 불러오는 중...</div>';
+  document.getElementById('adultBtn').style.display = 'none';
+  try {
+    const books = await fetchPopularByAge(20, 59, key, adultGender);
+    renderBookList(books, 'adultList', 'adultCount', 'adultBtn', adultBooks);
+  } catch(e) {
+    document.getElementById('adultList').innerHTML = '<div class="err-box">불러오기 실패. API 키를 확인해 주세요.</div>';
+  }
+}
+
+function setGender(g) {
+  adultGender = g;
+  document.getElementById('genderF').classList.toggle('active', g === 'F');
+  document.getElementById('genderM').classList.toggle('active', g === 'M');
+  adultBooks = [];
+  document.getElementById('adultResult').innerHTML = '';
+  loadAdultBooks();
+}
+
+/* ── SEARCH CHECKED BOOKS ── */
+async function searchCheckedBooks(type) {
+  const key = getKey(); if (!key) return;
+  const store = type === 'kids' ? kidsBooks : adultBooks;
+  const resultId = type === 'kids' ? 'kidsResult' : 'adultResult';
+  const checked = store.filter(b => b.checked);
+  if (checked.length === 0) { alert('책을 하나 이상 선택해 주세요.'); return; }
+  await runLibrarySearch(checked, key, resultId);
+}
+
+/* ── DIRECT SEARCH ── */
+async function startDirectSearch() {
+  const key = getKey(); if (!key) return;
+  const raw = document.getElementById('bookInput').value.trim();
+  if (!raw) { alert('책 제목을 입력해 주세요.'); return; }
+  const titles = raw.split('\n').map(t => t.trim()).filter(t => t).slice(0, 10);
+
+  document.getElementById('searchBtn').disabled = true;
+  document.getElementById('searchResult').innerHTML = '<div class="loading"><div class="spinner"></div>책 제목 확인 중...</div>';
+
+  const confirmedBooks = [];
+  let step1HTML = `<div class="card"><div class="step-badge">1단계 — 책 제목 확인</div><div class="section-title">검색된 도서 정보</div>`;
+
+  for (const title of titles) {
+    try {
+      const results = await searchBook(title, key);
+      if (results.length === 0) {
+        step1HTML += `<div class="confirm-card"><div class="confirm-icon icon-err">✕</div><div class="confirm-info"><div class="confirm-title">${title}</div><div class="confirm-meta" style="color:var(--red)">검색 결과 없음 — 제목을 다시 확인해 보세요</div></div></div>`;
+      } else {
+        const best = results[0];
+        confirmedBooks.push(best);
+        step1HTML += `<div class="confirm-card"><div class="confirm-icon icon-ok">✓</div><div class="confirm-info"><div class="confirm-title">${best.title}<span class="isbn-badge">ISBN ${best.isbn}</span></div><div class="confirm-meta">${best.author}${best.pub ? ' · ' + best.pub : ''}</div></div></div>`;
+      }
+    } catch(e) {
+      step1HTML += `<div class="confirm-card"><div class="confirm-icon icon-err">!</div><div class="confirm-info"><div class="confirm-title">${title}</div><div class="confirm-meta" style="color:var(--red)">오류 발생 — API 키를 확인해 주세요</div></div></div>`;
+    }
+  }
+  step1HTML += `</div>`;
+  document.getElementById('searchResult').innerHTML = step1HTML;
+
+  if (confirmedBooks.length === 0) {
+    document.getElementById('searchBtn').disabled = false;
+    return;
+  }
+
+  await runLibrarySearch(confirmedBooks, key, 'searchResult');
+  document.getElementById('searchBtn').disabled = false;
+}
+
+/* ── CORE: RUN LIBRARY SEARCH ── */
+async function runLibrarySearch(books, key, resultContainerId) {
+  const container = document.getElementById(resultContainerId);
+  container.innerHTML += '<div class="loading" id="libLoading"><div class="spinner"></div>18개 도서관 소장 여부 확인 중... 잠시만 기다려 주세요 ☕</div>';
+
+  const matrix = {};
+  for (const b of books) {
+    matrix[b.isbn] = {};
+    for (const lib of LIBRARIES) {
+      try {
+        matrix[b.isbn][lib.code] = await checkLib(b.isbn, lib.code, key);
+      } catch(e) {
+        matrix[b.isbn][lib.code] = false;
+      }
+    }
+  }
+
+  document.getElementById('libLoading')?.remove();
+
+  /* ── TABLE ── */
+  let tableHTML = `<div class="card"><div class="step-badge">2단계 — 도서관 소장 현황</div><div class="section-title">도서관별 소장 여부</div><div class="tbl-wrap"><table class="result-table"><thead><tr><th class="left">책 제목</th>`;
+  LIBRARIES.forEach(lib => {
+    tableHTML += `<th>${lib.name.replace('도서관','')}</th>`;
+  });
+  tableHTML += `</tr></thead><tbody>`;
+  books.forEach(b => {
+    const shortTitle = b.title.length > 16 ? b.title.slice(0, 16) + '…' : b.title;
+    tableHTML += `<tr><td class="left">${shortTitle}</td>`;
+    LIBRARIES.forEach(lib => {
+      tableHTML += `<td>${matrix[b.isbn][lib.code] ? '<span class="dot-y"></span>' : '<span class="dot-n"></span>'}</td>`;
+    });
+    tableHTML += `</tr>`;
+  });
+  tableHTML += `</tbody></table></div></div>`;
+  container.innerHTML += tableHTML;
+
+  /* ── RANK ── */
+  const scores = LIBRARIES.map(lib => {
+    const cnt = books.filter(b => matrix[b.isbn][lib.code]).length;
+    return { name: lib.name, cnt };
+  }).sort((a, b) => b.cnt - a.cnt).filter(l => l.cnt > 0);
+
+  const maxCnt = scores.length > 0 ? scores[0].cnt : 0;
+
+  let rankHTML = `<div class="card"><div class="step-badge">3단계 — 도서관 순위</div><div class="section-title">내 책 목록을 가장 많이 보유한 도서관</div><div class="rank-list">`;
+  scores.forEach((s, i) => {
+    const pct = maxCnt > 0 ? Math.round((s.cnt / maxCnt) * 100) : 0;
+    rankHTML += `<div class="rank-row ${i === 0 ? 'top' : ''}">
+      <div class="rank-num ${i === 0 ? 'gold' : ''}">${i + 1}</div>
+      <div class="rank-name">${s.name}</div>
+      <div class="rank-bar-bg"><div class="rank-bar-fill" style="width:${pct}%"></div></div>
+      <div class="rank-count">${s.cnt}/${books.length}권</div>
+    </div>`;
+  });
+  rankHTML += `</div>`;
+
+  if (scores.length === 0) {
+    rankHTML += `<div class="err-box">성남시 어느 도서관에도 소장된 책이 없어요. 도서관 홈페이지에서 희망도서 신청을 이용해 보세요.</div>`;
+  } else {
+    const best = scores[0];
+    const msg = best.cnt === books.length
+      ? `🎉 ${best.name} 한 곳에서 찾는 책 ${books.length}권을 모두 빌릴 수 있어요!`
+      : `📍 ${best.name}에 가면 ${books.length}권 중 ${best.cnt}권을 한번에 빌릴 수 있어요.`;
+    rankHTML += `<div class="recommend-box"><span class="rec-icon">🏆</span><span>${msg}</span></div>`;
+  }
+  rankHTML += `</div>`;
+  container.innerHTML += rankHTML;
+}
+
+function resetSearch() {
+  document.getElementById('bookInput').value = '';
+  document.getElementById('searchResult').innerHTML = '';
+  document.getElementById('searchBtn').disabled = false;
+}
+</script>
+</body>
+</html>
